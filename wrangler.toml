@@ -1,0 +1,8 @@
+name = "my-pet-worker"
+main = "src/index.ts"
+compatibility_date = "2024-07-15"
+
+[[d1_databases]]
+binding = "DB" # available in your Worker on env.DB
+database_name = "pets"
+database_id = "54cd951a-cb5b-4928-9a40-5f217fd9b20c"

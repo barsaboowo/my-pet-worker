@@ -10,9 +10,38 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
+import { D1Database } from '@cloudflare/workers-types';
+
+export interface Env {
+  DB: D1Database;
+}
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+		// Handle CORS preflight requests
+		if (request.method === "OPTIONS") {
+		return new Response(null, {
+		status: 204,
+			headers: {
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Access-Control-Allow-Origin",
+			}
+		});
+		}
+
+		if (request.method !== 'GET') {
+			return new Response('Method Not Allowed', { status: 405 });
+		}
+		
+		const data = await env.DB.prepare(
+			"SELECT pet_id, pet_name, pet_type, pet_gender from my_pets"
+		 ).run();
+		   return new Response(JSON.stringify({
+				  message: `Results returned successfully`,
+				  results: data.results
+		   }), {
+				 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+		   });
 	},
 } satisfies ExportedHandler<Env>;

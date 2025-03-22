@@ -30,18 +30,62 @@ export default {
 		});
 		}
 
-		if (request.method !== 'GET') {
+		if (request.method !== 'GET' && request.method !== 'POST') {
 			return new Response('Method Not Allowed', { status: 405 });
 		}
 		
-		const data = await env.DB.prepare(
-			"SELECT pet_id, pet_name, pet_type, pet_gender from my_pets"
-		 ).run();
-		   return new Response(JSON.stringify({
-				  message: `Results returned successfully`,
-				  results: data.results
-		   }), {
-				 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-		   });
+		//GET results
+		if (request.method === "GET"){
+			const data = await env.DB.prepare(
+				"SELECT pet_id, pet_name, pet_type, pet_gender, pet_image from my_pets"
+			).run();
+			
+			return new Response(JSON.stringify({
+					message: `Results returned successfully`,
+					results: data.results
+			}), {
+					headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+			});
+		}
+
+		//POST new entry
+		if (request.method === "POST"){
+			try {
+				const body = await request.json(); // Parse request body
+				const { pet_id, pet_name, pet_type, pet_gender, pet_image } = body;
+		
+				if (!pet_id || !pet_name || !pet_type || !pet_gender || !pet_image) {
+				  return new Response(
+					JSON.stringify({ error: "Missing required fields" }),
+					{ status: 400, headers: { "Content-Type": "application/json" } }
+				  );
+				}
+		
+				const result = await env.DB.prepare(
+				  "INSERT INTO my_pets (pet_id, pet_name, pet_type, pet_gender, pet_image) VALUES (?, ?, ?, ?)"
+				)
+				  .bind(pet_id, pet_name, pet_type, pet_gender, pet_image)
+				  .run();
+		
+				return new Response(
+				  JSON.stringify({
+					message: "Pet added successfully",
+				  }),
+				  {
+					status: 201,
+					headers: {
+					  "Content-Type": "application/json",
+					  "Access-Control-Allow-Origin": "*",
+					},
+				  }
+				);
+			  } catch (error) {
+				return new Response(
+				  JSON.stringify({ error: "Invalid request body" }),
+				  { status: 400, headers: { "Content-Type": "application/json" } }
+				);
+			  }
+		}
+
 	},
 } satisfies ExportedHandler<Env>;
